@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d1117">
+<title>Presión Arterial</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d1117;--bg2:#111620;--surface:#161c27;--surface2:#1c2333;--surface3:#222b3d;
+  --accent:#e05c7a;--accent2:#c44d6a;--accent-soft:rgba(224,92,122,0.10);
+  --teal:#3ecfb5;--teal-soft:rgba(62,207,181,0.10);
+  --amber:#f5a623;--amber-soft:rgba(245,166,35,0.10);
+  --blue:#4d9de0;--blue-soft:rgba(77,157,224,0.10);
+  --green:#52c97a;--green-soft:rgba(82,201,122,0.10);
+  --red:#e05c5c;--red-soft:rgba(224,92,92,0.12);
+  --purple:#a78bfa;--purple-soft:rgba(167,139,250,0.10);
+  --text:#e8edf5;--text2:#8b98b0;--text3:#4d5a72;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.10);
+  --shadow:0 20px 60px rgba(0,0,0,0.5);--shadow-soft:0 8px 24px rgba(0,0,0,0.3);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#070b12;font-family:'Syne',system-ui,sans-serif;color:var(--text)}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+#app{position:relative;z-index:1;display:flex;flex-direction:column;height:100dvh;max-width:430px;margin:0 auto;background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);box-shadow:var(--shadow),0 0 0 1px rgba(255,255,255,0.04)}
+
+/* HEADER */
+#header{padding:18px 20px 14px;display:flex;align-items:center;gap:14px;flex-shrink:0;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(224,92,122,0.06),rgba(62,207,181,0.03))}
+.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#a03055);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 8px 24px rgba(224,92,122,0.35);position:relative;animation:pulse 2.5s ease-in-out infinite}
+.logo::after{content:'';position:absolute;inset:0;border-radius:14px;border:1px solid rgba(255,255,255,0.15)}
+.hinfo{flex:1;min-width:0}
+.hinfo h1{font-size:16px;font-weight:700;letter-spacing:-.01em;color:var(--text);margin:0}
+.hinfo p{font-size:11px;color:var(--text3);margin:3px 0 0;font-weight:500}
+.hstatus{font-size:10px;padding:5px 10px;border-radius:999px;background:var(--surface2);color:var(--text2);font-weight:600;border:1px solid var(--border2);white-space:nowrap;font-family:'JetBrains Mono',monospace}
+.hstatus.online{background:var(--green-soft);color:var(--green);border-color:rgba(82,201,122,0.2)}
+.hstatus.error{background:var(--red-soft);color:var(--red);border-color:rgba(224,92,92,0.2)}
+
+/* TABS */
+#tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;padding:8px 12px;gap:6px}
+.tab{flex:1;padding:9px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;border:1px solid transparent;border-radius:10px;transition:all .2s;letter-spacing:.03em;text-transform:uppercase}
+.tab.active{color:var(--text);background:var(--surface2);border-color:var(--border2);box-shadow:0 4px 14px rgba(0,0,0,0.25)}
+.panel{display:none;flex-direction:column;flex:1;min-height:0}
+.panel.active{display:flex}
+
+/* CHAT */
+.chat-messages{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch}
+.chat-messages::-webkit-scrollbar{width:3px}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:10px}
+.msg{max-width:88%;display:flex;flex-direction:column;animation:fadeUp .22s ease both}
+.msg.user{align-self:flex-end}.msg.bot{align-self:flex-start}
+.bubble{padding:13px 16px;border-radius:18px;font-size:14.5px;line-height:1.6}
+.msg.user .bubble{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-bottom-right-radius:5px;box-shadow:0 6px 20px rgba(224,92,122,0.3)}
+.msg.bot .bubble{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:5px;box-shadow:var(--shadow-soft)}
+.msg-time{font-size:10px;color:var(--text3);margin-top:5px;padding:0 4px;font-family:'JetBrains Mono',monospace}
+.msg.user .msg-time{text-align:right}
+.action-buttons{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.action-btn{background:var(--surface3);border:1px solid var(--border2);border-radius:14px;padding:13px 15px;font-size:13.5px;color:var(--text);font-family:'Syne',sans-serif;cursor:pointer;text-align:left;transition:all .18s;display:flex;align-items:center;gap:12px;width:100%;box-shadow:0 4px 14px rgba(0,0,0,0.2)}
+.action-btn:hover{background:rgba(224,92,122,0.1);border-color:rgba(224,92,122,0.25);transform:translateY(-1px)}
+.action-btn:active{transform:scale(.99)}
+.ab-icon{font-size:18px;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--surface2);flex-shrink:0;border:1px solid var(--border)}
+.ab-text{flex:1}.ab-title{font-weight:700;color:var(--text);margin-bottom:2px;font-size:13.5px}.ab-sub{font-size:11px;color:var(--text3)}
+.result-card{margin-top:12px;border-radius:14px;padding:14px 16px;font-size:13.5px}
+.result-card.green{background:var(--green-soft);border:1px solid rgba(82,201,122,0.2)}
+.result-card.amber{background:var(--amber-soft);border:1px solid rgba(245,166,35,0.2)}
+.result-card.red{background:var(--red-soft);border:1px solid rgba(224,92,92,0.2)}
+.result-card.neutral{background:var(--surface2);border:1px solid var(--border2)}
+.rrow{display:flex;justify-content:space-between;padding:6px 0;color:var(--text2);gap:10px}
+.rrow span:last-child{color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right;font-size:13px}
+.rrow.hl{border-top:1px solid var(--border);margin-top:8px;padding-top:12px;font-weight:700}
+.rrow.hl span{color:var(--accent)}.rrow.hl span:last-child{font-size:17px;color:var(--text)}
+.rname{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.08em;margin-bottom:10px;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+.typing-b{background:var(--surface2);border:1px solid var(--border);border-radius:18px;border-bottom-left-radius:5px;padding:15px 18px;display:flex;gap:5px;align-items:center}
+.dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:bk 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes bk{0%,60%,100%{transform:translateY(0);opacity:.6}30%{transform:translateY(-7px);opacity:1}}
+.sugs{display:flex;gap:7px;overflow-x:auto;padding:10px 14px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.sugs::-webkit-scrollbar{display:none}
+.sc{background:var(--surface2);border:1px solid var(--border2);border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all .15s}
+.sc:active{color:var(--accent);background:var(--accent-soft);border-color:rgba(224,92,122,0.3)}
+.input-area{background:var(--surface);padding:12px 14px;padding-bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:10px;align-items:flex-end;border-top:1px solid var(--border);flex-shrink:0}
+.msg-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:14px;padding:12px 16px;font-size:15px;font-family:'Syne',sans-serif;color:var(--text);outline:none;resize:none;max-height:100px;line-height:1.45;-webkit-appearance:none;transition:border-color .2s,box-shadow .2s}
+.msg-input::placeholder{color:var(--text3);font-size:14px}
+.msg-input:focus{border-color:rgba(224,92,122,0.4);box-shadow:0 0 0 4px rgba(224,92,122,0.08)}
+.send-btn{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#a03055);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s;box-shadow:0 6px 20px rgba(224,92,122,0.35)}
+.send-btn:active{transform:scale(.95)}
+.send-btn svg{width:18px;height:18px;fill:#fff;margin-left:2px}
+
+/* SCROLL PANELS */
+#rec-panel,#tend-panel{flex:1;overflow-y:auto;padding:14px 14px 32px;-webkit-overflow-scrolling:touch}
+#rec-panel::-webkit-scrollbar,#tend-panel::-webkit-scrollbar{width:3px}
+#rec-panel::-webkit-scrollbar-thumb,#tend-panel::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:10px}
+
+/* SECTION TITLES */
+.dash-title,.sec-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin:18px 0 11px;font-family:'JetBrains Mono',monospace}
+.sec-title:first-child,.dash-title:first-child{margin-top:4px}
+
+/* ÚLTIMA MEDICIÓN */
+.ultima-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow-soft);position:relative;overflow:hidden;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+.ultima-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--purple),var(--teal))}
+.ultima-left{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.ultima-header{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.ultima-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace}
+.ultima-fecha{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.5}
+.ultima-presion{font-size:30px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1;background:linear-gradient(135deg,var(--text) 60%,var(--text2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.ultima-unidad{font-size:10px;color:var(--text3);margin-top:3px;font-family:'JetBrains Mono',monospace}
+.ultima-badge{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase}
+.ultima-right{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.ultima-vs{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.vs-item{text-align:right}
+.vs-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:'JetBrains Mono',monospace}
+.vs-val{font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text)}
+.vs-sep{display:none}
+.diff-up{color:var(--red)}.diff-down{color:var(--green)}.diff-eq{color:var(--text3)}
+
+/* STAT GRID */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 15px;box-shadow:var(--shadow-soft);position:relative;overflow:hidden}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.scard.teal::before{background:linear-gradient(90deg,var(--teal),transparent)}
+.scard.blue::before{background:linear-gradient(90deg,var(--blue),transparent)}
+.scard.green::before{background:linear-gradient(90deg,var(--green),transparent)}
+.scard.amber::before{background:linear-gradient(90deg,var(--amber),transparent)}
+.scard.red::before{background:linear-gradient(90deg,var(--red),transparent)}
+.scard.purple::before{background:linear-gradient(90deg,var(--purple),transparent)}
+.scard .slabel{font-size:10px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;font-family:'JetBrains Mono',monospace}
+.scard .sval{font-size:26px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);line-height:1}
+.scard .ssub{font-size:10px;color:var(--text3);margin-top:5px}
+.scard.green .sval{color:var(--green)}.scard.teal .sval{color:var(--teal)}
+.scard.blue .sval{color:var(--blue)}.scard.amber .sval{color:var(--amber)}
+.scard.red .sval{color:var(--red)}.scard.purple .sval{color:var(--purple)}
+
+/* EXTREMOS */
+.extremos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.ext-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:15px;box-shadow:var(--shadow-soft)}
+.ext-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.ext-val{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1}
+.ext-date{font-size:10px;color:var(--text3);margin-top:6px}
+.ext-card.high .ext-val{color:var(--red)}.ext-card.low .ext-val{color:var(--teal)}
+
+/* RACHA */
+.racha-row{display:flex;gap:10px;margin-bottom:10px}
+.racha-card{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow-soft);text-align:center}
+.racha-icon{font-size:20px;margin-bottom:5px;display:block}
+.racha-val{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--amber);line-height:1}
+.racha-label{font-size:9px;color:var(--text3);margin-top:5px;text-transform:uppercase;letter-spacing:.06em;font-family:'JetBrains Mono',monospace}
+
+/* SEMANA */
+.semana-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow-soft);margin-bottom:10px}
+.semana-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.semana-dia{text-align:center}
+.semana-letra{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:5px;display:block;text-transform:uppercase}
+.semana-dot{width:100%;aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text3);background:var(--surface2)}
+.semana-dot.tiene-normal{background:var(--green-soft);color:var(--green)}
+.semana-dot.tiene-elevada{background:var(--amber-soft);color:var(--amber)}
+.semana-dot.tiene-alta{background:var(--red-soft);color:var(--red)}
+.semana-dot.hoy{outline:2px solid var(--accent);outline-offset:1px}
+.semana-comparativa{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.sem-comp{flex:1;text-align:center}
+.sem-comp-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;font-family:'JetBrains Mono',monospace}
+.sem-comp-val{font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text)}
+.sem-comp-diff{font-size:9px;display:block;margin-top:2px;font-family:'JetBrains Mono',monospace}
+.sem-sep{width:1px;background:var(--border);flex-shrink:0}
+
+/* DISTRIBUCIÓN */
+.distrib-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:var(--shadow-soft);margin-bottom:10px}
+.distrib-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.distrib-row:last-child{margin-bottom:0}
+.distrib-label{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;min-width:58px;text-transform:uppercase;letter-spacing:.03em}
+.distrib-bar-bg{flex:1;height:8px;background:var(--surface3);border-radius:999px;overflow:hidden}
+.distrib-bar{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.distrib-pct{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);min-width:30px;text-align:right}
+.distrib-n{font-size:10px;color:var(--text3);min-width:18px;text-align:right}
+
+/* GRÁFICO */
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:18px;box-shadow:var(--shadow-soft);margin-bottom:10px}
+.chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.chart-title{font-size:13px;font-weight:700;color:var(--text)}
+.chart-legend{display:flex;gap:12px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.chart-filter{display:flex;gap:6px;margin-bottom:14px}
+.cf-btn{padding:5px 10px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:.04em;transition:all .15s}
+.cf-btn.active{background:var(--accent-soft);color:var(--accent);border-color:rgba(224,92,122,0.3)}
+#trend-canvas{width:100%;display:block;border-radius:10px}
+.chart-rango{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.chart-rango-item{text-align:center;flex:1}
+.chart-rango-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:'JetBrains Mono',monospace}
+.chart-rango-val{font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);margin-top:3px}
+
+/* REFERENCIA */
+.ref-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow-soft);margin-bottom:10px}
+.ref-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.ref-row:last-child{border-bottom:none}
+.ref-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.ref-nombre{font-size:12.5px;color:var(--text2);flex:1}
+.ref-rango{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3)}
+
+/* HISTORIAL */
+.dia-bloque{background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow-soft)}
+.dia-header{padding:12px 15px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--surface2)}
+.dia-fecha{font-size:12.5px;font-weight:700;color:var(--text);text-transform:capitalize}
+.dia-count{font-size:10px;color:var(--text3);font-weight:600;font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:3px 8px;border-radius:999px}
+.medicion-row{padding:12px 15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);gap:8px;transition:background .15s}
+.medicion-row:last-child{border-bottom:none}
+.medicion-row:hover{background:var(--surface2)}
+.mr-hora{font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;min-width:42px}
+.mr-presion{font-size:17px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);flex:1;text-align:center}
+.mr-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.04em;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+.badge-normal{background:var(--green-soft);color:var(--green)}
+.badge-elevada{background:var(--amber-soft);color:var(--amber)}
+.badge-alta{background:var(--red-soft);color:var(--red)}
+.badge-baja{background:var(--blue-soft);color:var(--blue)}
+.nota-row{padding:12px 15px;font-size:12.5px;color:var(--text2);border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;background:rgba(245,166,35,0.04);font-style:italic}
+.nota-row span:first-child{opacity:.65;flex-shrink:0}
+.empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px;line-height:1.8}
+.empty-icon{font-size:36px;margin-bottom:12px;display:block;opacity:.5}
+
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:430px){#app{max-width:100%;border-left:0;border-right:0}.bubble{font-size:14px}.sgrid,.extremos{gap:8px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div class="logo">💓</div>
+    <div class="hinfo">
+      <h1>Presión Arterial</h1>
+      <p id="hsubtitle">Cargando registros...</p>
+    </div>
+    <div class="hstatus" id="hstatus">···</div>
+  </div>
+
+  <div id="tabs">
+    <div class="tab active" onclick="switchTab('chat')">💬 Chat</div>
+    <div class="tab" onclick="switchTab('registros')">📋 Registros</div>
+    <div class="tab" onclick="switchTab('tendencia')">📊 Stats</div>
+  </div>
+
+  <div class="panel active" id="panel-chat">
+    <div class="chat-messages" id="chat"></div>
+    <div class="sugs">
+      <div class="sc" onclick="sugerencia('📝 Ingresar presión')">📝 Ingresar presión</div>
+      <div class="sc" onclick="sugerencia('💬 Agregar nota')">💬 Agregar nota</div>
+      <div class="sc" onclick="sugerencia('📊 Ver hoy')">📊 Ver hoy</div>
+    </div>
+    <div class="input-area">
+      <textarea class="msg-input" id="input" placeholder="Escriba su presión: 130 80" rows="1" onkeydown="keydown(event)" oninput="resize(this)"></textarea>
+      <button class="send-btn" onclick="send()"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-registros">
+    <div id="rec-panel">
+      <div id="dashboard-section"></div>
+      <div id="lista-dias"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-tendencia">
+    <div id="tend-panel">
+      <div id="tendencia-section"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyAtU0CfZWj2guZ2JkQRvzUTBRhHTytOFKyToQJ5qAJmFcxt_sYFJm-4_xntPl6k5TiQ/exec";
+let estado='inicio', tempData={}, todosLosRegistros=[], chartRango=14;
+
+function switchTab(tab){
+  const ids=['chat','registros','tendencia'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='registros') renderRegistros();
+  if(tab==='tendencia') renderTendencia();
+}
+
+async function api(params){return (await fetch(SCRIPT_URL+'?'+new URLSearchParams(params))).json()}
+async function apiPost(body){return (await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(body)})).json()}
+
+function hora(){return new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit',hour12:false})}
+function addMsg(html,tipo='bot'){
+  const chat=document.getElementById('chat');
+  const div=document.createElement('div');
+  div.className='msg '+tipo;
+  div.innerHTML=`<div class="bubble">${html}</div><div class="msg-time">${hora()}</div>`;
+  chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
+}
+function addTyping(){const chat=document.getElementById('chat');const div=document.createElement('div');div.className='msg bot';div.id='typing';div.innerHTML='<div class="typing-b"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';chat.appendChild(div);chat.scrollTop=chat.scrollHeight;}
+function removeTyping(){const t=document.getElementById('typing');if(t)t.remove()}
+
+async function init(){
+  document.getElementById('hstatus').textContent='···';
+  addTyping();
+  try{
+    const data=await api({action:'getData'});
+    removeTyping();
+    if(data.success){
+      todosLosRegistros=data.data||[];
+      const el=document.getElementById('hstatus');
+      el.textContent='● online';el.classList.add('online');
+      bienvenida();
+    } else {
+      const el=document.getElementById('hstatus');el.textContent='✗ error';el.classList.add('error');
+      addMsg('⚠️ No pude conectarme. Revisa la URL del script.');
+    }
+  } catch(e){
+    removeTyping();const el=document.getElementById('hstatus');el.textContent='✗ sin red';el.classList.add('error');
+    addMsg('⚠️ Sin conexión a internet. Intente más tarde.');
+  }
+}
+
+function bienvenida(){
+  const hoy=fechaHoy();
+  const registrosHoy=todosLosRegistros.filter(r=>r.fecha===hoy&&!r.esNota&&r.presion);
+  const h=new Date().getHours();
+  const saludo=h<12?'Buenos días 🌅':h<19?'Buenas tardes ☀️':'Buenas noches 🌙';
+  document.getElementById('hsubtitle').textContent=registrosHoy.length?`${registrosHoy.length} medición(es) hoy`:'Sin registros hoy';
+  let html=`<strong>${saludo}</strong><br><br>`;
+  html+=registrosHoy.length?`Hoy lleva <strong>${registrosHoy.length}</strong> medición(es) registrada(s).<br><br>`:`Aún no hay registros de hoy.<br><br>`;
+  html+=`¿Qué desea hacer?<div class="action-buttons">
+    <button class="action-btn" onclick="iniciarPresion()"><span class="ab-icon">📝</span><div class="ab-text"><div class="ab-title">Ingresar presión</div><div class="ab-sub">Registrar una nueva medición</div></div></button>
+    <button class="action-btn" onclick="iniciarNota()"><span class="ab-icon">💬</span><div class="ab-text"><div class="ab-title">Agregar nota del día</div><div class="ab-sub">Lo que comió, caminó, sintió...</div></div></button>
+    <button class="action-btn" onclick="verHoy()"><span class="ab-icon">📊</span><div class="ab-text"><div class="ab-title">Ver registros de hoy</div><div class="ab-sub">Mediciones del día de hoy</div></div></button>
+  </div>`;
+  addMsg(html);
+}
+
+function iniciarPresion(){estado='esperando_presion';addMsg('💓 <strong>Ingreso de presión</strong><br><br>Escriba los dos números separados por un espacio:<br><br><strong>Ejemplo: 130 80</strong><br><br>El primer número es la presión alta,<br>el segundo la presión baja.')}
+function iniciarNota(){estado='esperando_nota';const hoyFmt=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});addMsg(`💬 <strong>Nota para hoy</strong><br><span style="color:var(--text2);font-size:13px">${hoyFmt}</span><br><br>Escriba libremente lo que quiera recordar de hoy:<br><br>• Qué comió<br>• Si caminó o hizo ejercicio<br>• Cómo se sintió<br>• Cualquier comentario`)}
+function verHoy(){
+  const hoy=fechaHoy();const registros=todosLosRegistros.filter(r=>r.fecha===hoy);
+  if(!registros.length||registros.every(r=>r.esNota)){addMsg('📊 <strong>Hoy</strong><br><br>Aún no hay mediciones registradas hoy.');return;}
+  let html=`📊 <strong>Registros de hoy</strong><div class="result-card green" style="margin-top:12px"><div class="rname">${new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'})}</div>`;
+  registros.filter(r=>!r.esNota&&r.presion).forEach(r=>{const ev=evalPresion(r.presion);html+=`<div class="rrow"><span>${r.hora||'-'}</span><span>${r.presion} <span style="font-size:11px;color:${ev.color}">${ev.emoji}</span></span></div>`;});
+  registros.filter(r=>r.esNota).forEach(r=>{html+=`<div style="padding:8px 0;font-size:13px;color:var(--text2);font-style:italic;border-top:1px solid var(--border);margin-top:4px">📝 ${r.notas}</div>`;});
+  html+=`</div>`;addMsg(html);
+}
+
+async function procesarEntrada(texto){
+  if(estado==='esperando_presion') await procesarPresion(texto);
+  else if(estado==='esperando_nota') await procesarNota(texto);
+  else if(estado==='esperando_confirmacion') await procesarConfirmacion(texto);
+  else{
+    if(/\d{2,3}\s+\d{2,3}/.test(texto)) await procesarPresion(texto);
+    else if(/\d{2,3}[\/\-]\d{2,3}/.test(texto)) await procesarPresion(texto.replace(/[\/\-]/,' '));
+    else{const l=texto.toLowerCase();if(l.includes('nota')||l.includes('anotar'))iniciarNota();else if(l.includes('hoy')||l.includes('ver'))verHoy();else addMsg('No entendí bien 🙂<br><br>Puede escribir su presión directamente:<br><strong>130 80</strong><br><br>O usar los botones de abajo 👇');}
+  }
+}
+
+async function procesarPresion(texto){
+  const clean=texto.replace(/[\/\-]/,' ');const m=clean.match(/(\d{2,3})\s+(\d{2,3})/);
+  if(!m){addMsg('⚠️ No pude leer la presión.<br><br>Escriba dos números separados por espacio.<br>Ejemplo: <strong>130 80</strong>');return;}
+  const s=parseInt(m[1]),d=parseInt(m[2]);
+  if(s<70||s>250||d<40||d>150){addMsg(`⚠️ Los números <strong>${s}</strong> y <strong>${d}</strong> parecen fuera del rango normal.<br><br>Intente nuevamente.`);return;}
+  const presion=`${s}/${d}`,horaAhora=new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit',hour12:false}),ev=evalPresion(presion);
+  tempData={s,d,presion,hora:horaAhora,fecha:fechaHoy()};estado='esperando_confirmacion';
+  const hoyFmt=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  addMsg(`✅ <strong>Confirme los datos</strong><div class="result-card neutral" style="margin-top:12px"><div class="rrow"><span>📅 Fecha</span><span>${hoyFmt}</span></div><div class="rrow"><span>🕐 Hora</span><span>${horaAhora}</span></div><div class="rrow hl"><span>💓 Presión</span><span>${presion} mmHg</span></div></div><br>¿Es correcto?<div class="action-buttons" style="margin-top:10px"><button class="action-btn" onclick="confirmarPresion(true)"><span class="ab-icon">✅</span><div class="ab-text"><div class="ab-title">Sí, guardar</div><div class="ab-sub">Registrar esta medición</div></div></button><button class="action-btn" onclick="confirmarPresion(false)"><span class="ab-icon">✏️</span><div class="ab-text"><div class="ab-title">No, corregir</div><div class="ab-sub">Volver a ingresar datos</div></div></button></div>`);
+}
+
+async function procesarConfirmacion(texto){
+  const l=texto.toLowerCase().trim();
+  if(['si','sí','s','yes','ok'].includes(l)){
+    estado='inicio';addTyping();
+    const res=await apiPost({action:'addMedicion',fecha:tempData.fecha,hora:tempData.hora,sistolica:tempData.s,diastolica:tempData.d});
+    removeTyping();
+    if(res.success){
+      todosLosRegistros.push({fecha:tempData.fecha,hora:tempData.hora,presion:tempData.presion,sistolica:tempData.s,diastolica:tempData.d,esNota:false,notas:''});
+      actualizarSubtitle();
+      addMsg(`✅ <strong>¡Guardado!</strong><br><br>Presión <strong>${tempData.presion}</strong> registrada correctamente.<br><br>¿Quiere agregar alguna nota de hoy?<div class="action-buttons" style="margin-top:10px"><button class="action-btn" onclick="iniciarNota()"><span class="ab-icon">💬</span><div class="ab-text"><div class="ab-title">Sí, agregar nota</div></div></button><button class="action-btn" onclick="bienvenida()"><span class="ab-icon">🏠</span><div class="ab-text"><div class="ab-title">No, volver al inicio</div></div></button></div>`);
+    } else addMsg(`⚠️ No se pudo guardar. Intente nuevamente.`);
+    tempData={};
+  } else if(['no','n'].includes(l)){estado='esperando_presion';tempData={};addMsg('De acuerdo. Escriba nuevamente la presión:<br><strong>Ejemplo: 130 80</strong>');}
+  else addMsg('Por favor escriba <strong>sí</strong> o <strong>no</strong>');
+}
+
+async function procesarNota(texto){
+  if(texto.length<3){addMsg('⚠️ La nota está muy corta. Escriba un poco más.');return;}
+  addTyping();const res=await apiPost({action:'addNota',fecha:fechaHoy(),nota:texto});
+  removeTyping();estado='inicio';
+  if(res.success){todosLosRegistros.push({fecha:fechaHoy(),hora:'',presion:'',sistolica:0,diastolica:0,esNota:true,notas:texto});addMsg(`✅ <strong>Nota guardada</strong><br><br><em>"${texto}"</em>`);}
+  else addMsg(`⚠️ No se pudo guardar la nota.`);
+}
+
+async function confirmarPresion(ok){
+  if(ok){
+    estado='inicio';addTyping();
+    const res=await apiPost({action:'addMedicion',fecha:tempData.fecha,hora:tempData.hora,sistolica:tempData.s,diastolica:tempData.d});
+    removeTyping();
+    if(res.success){todosLosRegistros.push({fecha:tempData.fecha,hora:tempData.hora,presion:tempData.presion,sistolica:tempData.s,diastolica:tempData.d,esNota:false,notas:''});actualizarSubtitle();addMsg(`✅ <strong>¡Guardado!</strong><br><br>Presión <strong>${tempData.presion}</strong> registrada correctamente.`);}
+    else addMsg(`⚠️ No se pudo guardar.`);
+    tempData={};
+  } else {estado='esperando_presion';tempData={};addMsg('Perfecto 👍<br><br>Escriba nuevamente la presión:<br><strong>Ejemplo: 130 80</strong>');}
+}
+
+// ══════════════════════════════════════════════════
+// PANEL STATS
+// ══════════════════════════════════════════════════
+function getSisVal(r){return r.sistolica||parseInt((r.presion||'').split('/')[0])||0}
+function getDiaVal(r){return r.diastolica||parseInt((r.presion||'').split('/')[1])||0}
+
+function renderRegistros(){
+  const meds=todosLosRegistros.filter(r=>!r.esNota&&r.presion);
+  if(!meds.length){
+    document.getElementById('dashboard-section').innerHTML='';
+    document.getElementById('lista-dias').innerHTML='<div class="empty"><span class="empty-icon">💓</span>Sin registros aún.<br>Use el chat para ingresar su primera medición.</div>';
+    return;
+  }
+
+  const hoy=fechaHoy();
+  const totalDias=new Set(meds.map(r=>r.fecha)).size;
+  const allS=meds.map(r=>getSisVal(r)).filter(v=>v>0);
+  const allD=meds.map(r=>getDiaVal(r)).filter(v=>v>0);
+  const promS=allS.length?Math.round(allS.reduce((a,b)=>a+b,0)/allS.length):0;
+  const promD=allD.length?Math.round(allD.reduce((a,b)=>a+b,0)/allD.length):0;
+  const maxS=allS.length?Math.max(...allS):0;const minS=allS.length?Math.min(...allS):0;
+  const maxD=allD.length?Math.max(...allD):0;const minD=allD.length?Math.min(...allD):0;
+  const maxSR=meds.filter(r=>getSisVal(r)===maxS)[0];const minSR=meds.filter(r=>getSisVal(r)===minS)[0];
+
+  // Última medición
+  const ultima=meds[meds.length-1];
+  const ultimaEv=evalPresion(ultima.presion);
+  const badgeBg={Normal:'var(--green-soft)',Elevada:'var(--amber-soft)',Alta:'var(--red-soft)',Baja:'var(--blue-soft)',Crisis:'var(--red-soft)'};
+  const badgeTx={Normal:'var(--green)',Elevada:'var(--amber)',Alta:'var(--red)',Baja:'var(--blue)',Crisis:'var(--red)'};
+
+  // Hoy vs promedio general
+  const medHoy=meds.filter(r=>r.fecha===hoy);
+  const pHS=medHoy.length?Math.round(medHoy.reduce((a,r)=>a+getSisVal(r),0)/medHoy.length):null;
+  const pHD=medHoy.length?Math.round(medHoy.reduce((a,r)=>a+getDiaVal(r),0)/medHoy.length):null;
+  const mkArrow=(a,b)=>{if(a===null||b===null)return '';const d=a-b;return d>2?`<span style="font-size:10px;color:var(--red)">▲${d}</span>`:d<-2?`<span style="font-size:10px;color:var(--green)">▼${Math.abs(d)}</span>`:`<span style="font-size:10px;color:var(--text3)">≈</span>`;};
+
+  // Distribución estados
+  const ecnt={normal:0,elevada:0,alta:0,baja:0,crisis:0};
+  meds.forEach(r=>{const ev=evalPresion(r.presion);const s=getSisVal(r),d=getDiaVal(r);const k=s>=180||d>=120?'crisis':ev.badge;ecnt[k]=(ecnt[k]||0)+1;});
+  const tot=meds.length;
+
+  // Racha
+  const fechasMed=[...new Set(meds.map(r=>r.fecha))].sort();
+  let rachaAct=0;
+  const hoyTs=new Date();hoyTs.setHours(12,0,0,0);
+  for(let i=fechasMed.length-1;i>=0;i--){
+    const d=parseFecha(fechasMed[i]);
+    const diff=Math.round((hoyTs-d)/(86400000));
+    if(diff===rachaAct){rachaAct++;}else break;
+  }
+  let temp=1,rachaMej=1;
+  for(let i=1;i<fechasMed.length;i++){
+    const a=parseFecha(fechasMed[i-1]),b=parseFecha(fechasMed[i]);
+    if(Math.round((b-a)/86400000)===1){temp++;rachaMej=Math.max(rachaMej,temp);}else temp=1;
+  }
+  if(fechasMed.length===1)rachaMej=1;
+
+  // Semana (últimos 7 días, lun-dom visual)
+  const semana=[];const diasL=['L','M','M','J','V','S','D'];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-i);
+    const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const dm=meds.filter(r=>r.fecha===key);
+    let cls='';
+    if(dm.length){const evs=dm.map(r=>evalPresion(r.presion).badge);cls=evs.includes('alta')?'tiene-alta':evs.includes('elevada')?'tiene-elevada':'tiene-normal';}
+    semana.push({key,letra:diasL[d.getDay()===0?6:d.getDay()-1],n:dm.length,cls,esHoy:key===hoy});
+  }
+
+  // Semana actual vs pasada
+  const now=new Date();now.setHours(23,59,59);
+  const h7=new Date();h7.setDate(h7.getDate()-6);h7.setHours(0,0,0,0);
+  const h14=new Date();h14.setDate(h14.getDate()-13);h14.setHours(0,0,0,0);
+  const h7b=new Date();h7b.setDate(h7b.getDate()-7);h7b.setHours(23,59,59);
+  const mSA=meds.filter(r=>{const d=parseFecha(r.fecha);return d>=h7&&d<=now;});
+  const mSP=meds.filter(r=>{const d=parseFecha(r.fecha);return d>=h14&&d<=h7b;});
+  const pSA_S=mSA.length?Math.round(mSA.reduce((a,r)=>a+getSisVal(r),0)/mSA.length):null;
+  const pSA_D=mSA.length?Math.round(mSA.reduce((a,r)=>a+getDiaVal(r),0)/mSA.length):null;
+  const pSP_S=mSP.length?Math.round(mSP.reduce((a,r)=>a+getSisVal(r),0)/mSP.length):null;
+  const pSP_D=mSP.length?Math.round(mSP.reduce((a,r)=>a+getDiaVal(r),0)/mSP.length):null;
+  const dS=pSA_S!==null&&pSP_S!==null?pSA_S-pSP_S:null;
+  const dD=pSA_D!==null&&pSP_D!==null?pSA_D-pSP_D:null;
+  const mkDiff=(v)=>{
+    if(v===null) return `<span class="sem-comp-diff diff-eq">sin comparativa</span>`;
+    if(v>2) return `<span class="sem-comp-diff diff-up">▲ ${v} vs sem. ant.</span>`;
+    if(v<-2) return `<span class="sem-comp-diff diff-down">▼ ${Math.abs(v)} vs sem. ant.</span>`;
+    return `<span class="sem-comp-diff diff-eq">≈ igual sem. ant.</span>`;
+  };
+
+  // ── PANEL REGISTROS: última + estadísticas + historial ──
+  let dash=`
+  <div class="sec-title">Última medición</div>
+  <div class="ultima-card">
+    <div class="ultima-left">
+      <div class="ultima-header"><span class="ultima-label">Presión</span></div>
+      <div class="ultima-presion">${ultima.presion}</div>
+      <div class="ultima-unidad">mmHg</div>
+      <div class="ultima-badge" style="background:${badgeBg[ultimaEv.texto]||'var(--surface2)'};color:${badgeTx[ultimaEv.texto]||'var(--text2)'}">
+        ${ultimaEv.emoji} ${ultimaEv.texto}
+      </div>
+    </div>
+    <div class="ultima-right">
+      <div class="ultima-fecha">${formatFechaCorta(ultima.fecha)}<br>${ultima.hora||'--:--'}</div>
+      ${medHoy.length?`<div class="ultima-vs">
+        <div class="vs-item"><div class="vs-label">Alta hoy</div><div class="vs-val">${pHS} ${mkArrow(pHS,promS)}</div></div>
+        <div class="vs-item"><div class="vs-label">Baja hoy</div><div class="vs-val">${pHD} ${mkArrow(pHD,promD)}</div></div>
+        <div class="vs-item"><div class="vs-label">Prom. gral.</div><div class="vs-val">${promS}/${promD}</div></div>
+      </div>`:''}
+    </div>
+  </div>
+
+  <div class="sec-title">Estadísticas generales</div>
+  <div class="sgrid">
+    <div class="scard teal"><div class="slabel">Mediciones</div><div class="sval">${tot}</div><div class="ssub">total registradas</div></div>
+    <div class="scard blue"><div class="slabel">Días</div><div class="sval">${totalDias}</div><div class="ssub">con seguimiento</div></div>
+    <div class="scard green"><div class="slabel">Prom. sistólica</div><div class="sval">${promS}</div><div class="ssub">mmHg promedio</div></div>
+    <div class="scard amber"><div class="slabel">Prom. diastólica</div><div class="sval">${promD}</div><div class="ssub">mmHg promedio</div></div>
+  </div>
+  <div class="extremos">
+    <div class="ext-card high"><div class="ext-label">📈 Máxima</div><div class="ext-val">${maxSR?maxS+'/'+maxD:'—'}</div><div class="ext-date">${maxSR?formatFechaCorta(maxSR.fecha):''}</div></div>
+    <div class="ext-card low"><div class="ext-label">📉 Mínima</div><div class="ext-val">${minSR?minS+'/'+minD:'—'}</div><div class="ext-date">${minSR?formatFechaCorta(minSR.fecha):''}</div></div>
+  </div>`;
+
+  document.getElementById('dashboard-section').innerHTML=dash;
+
+  // Historial
+  const porFecha=new Map();
+  todosLosRegistros.forEach(r=>{const k=r.fecha||'';if(!porFecha.has(k))porFecha.set(k,[]);porFecha.get(k).push(r);});
+  const fechasOrd=[...porFecha.keys()].filter(f=>f).sort().reverse();
+  let html=`<div class="sec-title">Historial de mediciones</div>`;
+  fechasOrd.forEach(fecha=>{
+    const items=porFecha.get(fecha);
+    const m2=items.filter(r=>!r.esNota&&r.presion);const notas=items.filter(r=>r.esNota);
+    html+=`<div class="dia-bloque"><div class="dia-header"><span class="dia-fecha">${formatFecha(fecha)}</span><span class="dia-count">${m2.length} med.</span></div>`;
+    m2.forEach(r=>{const ev=evalPresion(r.presion);const hd=(r.hora&&r.hora!=='--:--')?r.hora:'—';html+=`<div class="medicion-row"><span class="mr-hora">${hd}</span><span class="mr-presion">${r.presion}</span><span class="mr-badge badge-${ev.badge}">${ev.texto}</span></div>`;});
+    notas.forEach(r=>{html+=`<div class="nota-row"><span>📝</span><span>${r.notas}</span></div>`;});
+    html+=`</div>`;
+  });
+  document.getElementById('lista-dias').innerHTML=html||'<div class="empty"><span class="empty-icon">📋</span>Sin mediciones registradas.</div>';
+
+  // ── PANEL STATS: semana + distribución + referencia ── (se renderiza junto pero va a otro div)
+  const distribHtml=[
+    {k:'normal', l:'Normal',  c:'var(--green)', n:ecnt.normal},
+    {k:'elevada',l:'Elevada', c:'var(--amber)', n:ecnt.elevada},
+    {k:'alta',   l:'Alta',    c:'var(--red)',   n:ecnt.alta},
+    {k:'baja',   l:'Baja',    c:'var(--blue)',  n:ecnt.baja},
+    {k:'crisis', l:'Crisis',  c:'#ff4444',      n:ecnt.crisis},
+  ].filter(x=>x.n>0).map(x=>{const pct=Math.round(x.n/tot*100);return `
+    <div class="distrib-row">
+      <span class="distrib-label" style="color:${x.c}">${x.l}</span>
+      <div class="distrib-bar-bg"><div class="distrib-bar" style="width:${pct}%;background:${x.c};opacity:.8"></div></div>
+      <span class="distrib-pct" style="color:${x.c}">${pct}%</span>
+      <span class="distrib-n">${x.n}</span>
+    </div>`;}).join('');
+
+  window._statsExtra=`
+  <div class="sec-title">Esta semana</div>
+  <div class="semana-card">
+    <div class="semana-grid">
+      ${semana.map(d=>`<div class="semana-dia"><span class="semana-letra">${d.letra}</span><div class="semana-dot ${d.cls}${d.esHoy?' hoy':''}">${d.n||''}</div></div>`).join('')}
+    </div>
+    <div class="semana-comparativa">
+      <div class="sem-comp"><div class="sem-comp-label">Alta (prom)</div><div class="sem-comp-val">${pSA_S??'—'}</div>${mkDiff(dS)}</div>
+      <div class="sem-sep"></div>
+      <div class="sem-comp"><div class="sem-comp-label">Baja (prom)</div><div class="sem-comp-val">${pSA_D??'—'}</div>${mkDiff(dD)}</div>
+      <div class="sem-sep"></div>
+      <div class="sem-comp"><div class="sem-comp-label">Mediciones</div><div class="sem-comp-val">${mSA.length}</div><span class="sem-comp-diff diff-eq">esta semana</span></div>
+    </div>
+  </div>
+
+  <div class="sec-title">Distribución de estados</div>
+  <div class="distrib-card">${distribHtml}</div>
+
+  <div class="sec-title">Referencia OMS / AHA</div>
+  <div class="ref-card">
+    <div class="ref-row"><div class="ref-dot" style="background:var(--green)"></div><span class="ref-nombre">Normal</span><span class="ref-rango">&lt; 120 / &lt; 80</span></div>
+    <div class="ref-row"><div class="ref-dot" style="background:var(--amber)"></div><span class="ref-nombre">Elevada</span><span class="ref-rango">120–129 / &lt; 80</span></div>
+    <div class="ref-row"><div class="ref-dot" style="background:var(--red);opacity:.65"></div><span class="ref-nombre">Alta grado 1</span><span class="ref-rango">130–139 / 80–89</span></div>
+    <div class="ref-row"><div class="ref-dot" style="background:var(--red)"></div><span class="ref-nombre">Alta grado 2</span><span class="ref-rango">≥ 140 / ≥ 90</span></div>
+    <div class="ref-row"><div class="ref-dot" style="background:#ff3333"></div><span class="ref-nombre">Crisis hipertensiva</span><span class="ref-rango">≥ 180 / ≥ 120</span></div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════
+// PANEL STATS (tendencia + semana + distribución + referencia)
+// ══════════════════════════════════════════════════
+function renderTendencia(dias){
+  if(dias) chartRango=dias;
+  const meds=todosLosRegistros.filter(r=>!r.esNota&&r.presion);
+  if(!meds.length){document.getElementById('tendencia-section').innerHTML='<div class="empty"><span class="empty-icon">📊</span>Sin datos para mostrar.<br>Ingrese algunas mediciones primero.</div>';return;}
+
+  // Asegurar que los datos del panel Registros estén calculados (para _statsExtra)
+  if(!window._statsExtra) renderRegistros();
+
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-(chartRango-1));cutoff.setHours(0,0,0,0);
+  const mF=meds.filter(r=>{const d=parseFecha(r.fecha);return d&&d>=cutoff;}).sort((a,b)=>a.fecha.localeCompare(b.fecha)||((a.hora||'').localeCompare(b.hora||'')));
+
+  const pS=mF.length?Math.round(mF.reduce((a,r)=>a+getSisVal(r),0)/mF.length):0;
+  const pD=mF.length?Math.round(mF.reduce((a,r)=>a+getDiaVal(r),0)/mF.length):0;
+  const mxS=mF.length?Math.max(...mF.map(r=>getSisVal(r))):0;
+  const mnD=mF.length?Math.min(...mF.map(r=>getDiaVal(r))):0;
+
+  document.getElementById('tendencia-section').innerHTML=`
+  <div class="sec-title">Gráfico de tendencia</div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <span class="chart-title">Últimos ${chartRango} días</span>
+      <div class="chart-legend">
+        <span class="leg-item"><span class="leg-dot" style="background:var(--accent)"></span>Sistólica</span>
+        <span class="leg-item"><span class="leg-dot" style="background:var(--teal)"></span>Diastólica</span>
+      </div>
+    </div>
+    <div class="chart-filter">
+      <button class="cf-btn ${chartRango===7?'active':''}" onclick="renderTendencia(7)">7D</button>
+      <button class="cf-btn ${chartRango===14?'active':''}" onclick="renderTendencia(14)">14D</button>
+      <button class="cf-btn ${chartRango===30?'active':''}" onclick="renderTendencia(30)">30D</button>
+      <button class="cf-btn ${chartRango===90?'active':''}" onclick="renderTendencia(90)">3M</button>
+    </div>
+    <canvas id="trend-canvas" height="180"></canvas>
+    <div class="chart-rango">
+      <div class="chart-rango-item"><div class="chart-rango-label">Prom. Alta</div><div class="chart-rango-val" style="color:var(--accent)">${pS||'—'}</div></div>
+      <div class="chart-rango-item"><div class="chart-rango-label">Prom. Baja</div><div class="chart-rango-val" style="color:var(--teal)">${pD||'—'}</div></div>
+      <div class="chart-rango-item"><div class="chart-rango-label">Máx. Alta</div><div class="chart-rango-val" style="color:var(--red)">${mxS||'—'}</div></div>
+      <div class="chart-rango-item"><div class="chart-rango-label">Mín. Baja</div><div class="chart-rango-val" style="color:var(--blue)">${mnD||'—'}</div></div>
+    </div>
+  </div>
+  ${window._statsExtra||''}`;
+
+  setTimeout(()=>dibujarCanvas(mF,pS,pD),60);
+}
+
+function dibujarCanvas(mF,pS,pD){
+  const canvas=document.getElementById('trend-canvas');
+  if(!canvas) return;
+  const W=canvas.offsetWidth,dpr=window.devicePixelRatio||1;
+  canvas.width=W*dpr;canvas.height=180*dpr;canvas.style.height='180px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  const w=W,h=180,pL=40,pR=14,pT=14,pB=28;
+  const cW=w-pL-pR,cH=h-pT-pB;
+  const yMin=55,yMax=205;
+  const toY=v=>pT+cH-((v-yMin)/(yMax-yMin))*cH;
+  const toX=i=>pL+(mF.length<=1?0.5:i/(mF.length-1))*cW;
+
+  // Zonas fondo
+  ctx.fillStyle='rgba(82,201,122,0.07)';ctx.fillRect(pL,toY(120),cW,toY(yMin)-toY(120));
+  ctx.fillStyle='rgba(245,166,35,0.09)';ctx.fillRect(pL,toY(130),cW,toY(120)-toY(130));
+  ctx.fillStyle='rgba(245,166,35,0.13)';ctx.fillRect(pL,toY(140),cW,toY(130)-toY(140));
+  ctx.fillStyle='rgba(224,92,92,0.10)';ctx.fillRect(pL,pT,cW,toY(140)-pT);
+
+  // Grid horizontal
+  [80,90,120,130,140,160].forEach(v=>{
+    ctx.beginPath();ctx.strokeStyle='rgba(255,255,255,0.055)';ctx.lineWidth=1;ctx.setLineDash([3,6]);
+    ctx.moveTo(pL,toY(v));ctx.lineTo(pL+cW,toY(v));ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,255,255,0.22)';ctx.font=`${9}px JetBrains Mono,monospace`;ctx.textAlign='right';ctx.fillText(v,pL-5,toY(v)+3);
+  });
+
+  if(!mF.length){ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='12px Syne,sans-serif';ctx.textAlign='center';ctx.fillText('Sin datos en este período',pL+cW/2,h/2);return;}
+
+  const ptS=mF.map((r,i)=>({x:toX(i),y:toY(getSisVal(r))}));
+  const ptD=mF.map((r,i)=>({x:toX(i),y:toY(getDiaVal(r))}));
+
+  // Relleno gradiente sistólica
+  const gS=ctx.createLinearGradient(0,pT,0,h);gS.addColorStop(0,'rgba(224,92,122,0.28)');gS.addColorStop(1,'rgba(224,92,122,0)');
+  ctx.beginPath();ctx.moveTo(ptS[0].x,ptS[0].y);ptS.forEach(p=>ctx.lineTo(p.x,p.y));
+  ctx.lineTo(ptS[ptS.length-1].x,toY(yMin));ctx.lineTo(ptS[0].x,toY(yMin));ctx.closePath();ctx.fillStyle=gS;ctx.fill();
+
+  // Relleno gradiente diastólica
+  const gD=ctx.createLinearGradient(0,pT,0,h);gD.addColorStop(0,'rgba(62,207,181,0.18)');gD.addColorStop(1,'rgba(62,207,181,0)');
+  ctx.beginPath();ctx.moveTo(ptD[0].x,ptD[0].y);ptD.forEach(p=>ctx.lineTo(p.x,p.y));
+  ctx.lineTo(ptD[ptD.length-1].x,toY(yMin));ctx.lineTo(ptD[0].x,toY(yMin));ctx.closePath();ctx.fillStyle=gD;ctx.fill();
+
+  // Líneas
+  const drawLine=(pts,color,lw)=>{ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.lineJoin='round';ctx.lineCap='round';pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.stroke();};
+  drawLine(ptS,'#e05c7a',2.5);drawLine(ptD,'#3ecfb5',2);
+
+  // Promedios punteados
+  ctx.beginPath();ctx.strokeStyle='rgba(224,92,122,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,6]);ctx.moveTo(pL,toY(pS));ctx.lineTo(pL+cW,toY(pS));ctx.stroke();
+  ctx.beginPath();ctx.strokeStyle='rgba(62,207,181,0.4)';ctx.moveTo(pL,toY(pD));ctx.lineTo(pL+cW,toY(pD));ctx.stroke();ctx.setLineDash([]);
+
+  // Puntos
+  const step=Math.max(1,Math.floor(mF.length/20));
+  [ptS,ptD].forEach((pts,ci)=>{
+    const col=ci===0?'#e05c7a':'#3ecfb5';
+    pts.forEach((p,i)=>{
+      if(i%step!==0&&i!==0&&i!==pts.length-1) return;
+      ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+      ctx.strokeStyle='rgba(13,17,23,0.85)';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    // Último punto grande
+    const lp=pts[pts.length-1];
+    ctx.beginPath();ctx.arc(lp.x,lp.y,5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+  });
+
+  // Labels eje X
+  const nX=Math.min(5,mF.length);
+  ctx.fillStyle='rgba(255,255,255,0.28)';ctx.font='8.5px JetBrains Mono,monospace';ctx.textAlign='center';
+  for(let i=0;i<nX;i++){
+    const idx=Math.round(i*(mF.length-1)/(Math.max(nX-1,1)));
+    const d=parseFecha(mF[idx].fecha);
+    if(d) ctx.fillText(`${d.getDate()}/${d.getMonth()+1}`,toX(idx),h-6);
+  }
+}
+
+// ══ UTILS ══
+function evalPresion(presion){
+  const p=presion.split('/');if(p.length!==2)return{texto:'—',emoji:'⚪',badge:'baja',card:'green',color:'var(--text2)'};
+  const s=parseInt(p[0]),d=parseInt(p[1]);
+  if(s>=180||d>=120)return{texto:'Crisis',emoji:'🔴',badge:'alta',card:'red',color:'var(--red)'};
+  if(s>=140||d>=90) return{texto:'Alta',  emoji:'🟠',badge:'alta',card:'red',color:'var(--red)'};
+  if(s>=130||d>=80) return{texto:'Elevada',emoji:'🟡',badge:'elevada',card:'amber',color:'var(--amber)'};
+  if(s<90||d<60)    return{texto:'Baja',  emoji:'⚪',badge:'baja',card:'green',color:'var(--blue)'};
+  return                  {texto:'Normal',emoji:'🟢',badge:'normal',card:'green',color:'var(--green)'};
+}
+function fechaHoy(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function parseFecha(f){
+  if(!f)return null;
+  const iso=f.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(iso)return new Date(+iso[1],+iso[2]-1,+iso[3],12,0,0);
+  const dmy=f.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);if(dmy)return new Date(+dmy[3],+dmy[2]-1,+dmy[1],12,0,0);
+  return null;
+}
+function formatFecha(f){try{const d=parseFecha(f);if(!d)return f;return d.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}catch{return f;}}
+function formatFechaCorta(f){try{const d=parseFecha(f);if(!d)return f;return d.toLocaleDateString('es-CL',{day:'numeric',month:'short',year:'numeric'});}catch{return f;}}
+function actualizarSubtitle(){const hoy=fechaHoy();const n=todosLosRegistros.filter(r=>r.fecha===hoy&&!r.esNota&&r.presion).length;document.getElementById('hsubtitle').textContent=n?`${n} medición(es) hoy`:'Sin registros hoy';}
+function sugerencia(txt){const input=document.getElementById('input');input.value=txt;input.focus();if(txt.includes('nota')){iniciarNota();input.value='';}else if(txt.includes('hoy')){verHoy();input.value='';}else if(txt.includes('presión')){iniciarPresion();input.value='';}}
+function send(){const input=document.getElementById('input');const txt=input.value.trim();if(!txt)return;addMsg(txt,'user');input.value='';input.style.height='';procesarEntrada(txt);}
+function keydown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function resize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+
+init();
+</script>
+</body>
+</html>
